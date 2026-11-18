@@ -1,0 +1,1 @@
+Este módulo de extensão foi descontinuado e substituído pela solução 100% Web nativa em 'web-recorder.html' e na rota 'http://localhost:8000/'.

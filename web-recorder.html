@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gravador de Tela</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+    }
+    .recording-dot {
+      animation: pulse 1.2s infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center p-4 md:p-8 font-sans antialiased">
+
+  <!-- Painel de Controle Principal -->
+  <main class="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col items-center text-center mb-8">
+    
+    <!-- Título Principal -->
+    <h1 class="text-2xl font-bold text-white mb-4">
+      Gravador de Tela
+    </h1>
+
+    <!-- Indicador de Status -->
+    <div id="statusContainer" class="mb-5 flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300">
+      <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+      <span id="statusText">Pronto para iniciar</span>
+    </div>
+
+    <!-- Contadores -->
+    <div class="w-full grid grid-cols-2 gap-3 mb-6">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 flex flex-col items-center">
+        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliques</span>
+        <span id="clickCounter" class="text-2xl font-bold text-white tabular-nums">0</span>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 flex flex-col items-center">
+        <span class="text-[11px] font-semibold text-blue-400 uppercase tracking-wider mb-1">Fotos (+2)</span>
+        <span id="photoCounter" class="text-2xl font-bold text-blue-400 tabular-nums">0</span>
+      </div>
+    </div>
+
+    <!-- Preview da Tela -->
+    <div id="previewContainer" class="hidden w-full mb-6 relative rounded-2xl overflow-hidden border border-slate-700 bg-black aspect-video flex items-center justify-center">
+      <video id="screenVideo" autoplay playsinline muted class="w-full h-full object-contain pointer-events-none"></video>
+      <div class="absolute top-3 left-3 bg-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow">
+        <span class="w-2 h-2 rounded-full bg-white recording-dot"></span>
+        <span>Gravando</span>
+      </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="w-full space-y-3">
+      <button id="btnStart" class="w-full py-3.5 px-6 rounded-2xl font-bold text-sm bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 active:scale-[0.98] transition">
+        Iniciar Gravação
+      </button>
+
+      <button id="btnManualSnap" class="hidden w-full py-2.5 px-6 rounded-2xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">
+        📸 Capturar Agora (0,5s Antes + Atual)
+      </button>
+
+      <button id="btnStop" class="hidden w-full py-3.5 px-6 rounded-2xl font-bold text-sm bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 active:scale-[0.98] transition">
+        Finalizar Gravação
+      </button>
+
+      <button id="btnViewResult" class="hidden w-full py-3.5 px-6 rounded-2xl font-bold text-sm bg-emerald-600 hover:from-emerald-500 text-white shadow-lg shadow-emerald-600/30 active:scale-[0.98] transition">
+        Ver Fotos
+      </button>
+    </div>
+
+    <!-- Erros -->
+    <div id="errorBox" class="hidden mt-4 p-3 bg-red-950/60 border border-red-800 text-red-300 text-xs rounded-xl text-left w-full leading-relaxed"></div>
+
+  </main>
+
+  <!-- ================= GALERIA DE FOTOS ================= -->
+  <section id="gallerySection" class="hidden w-full max-w-4xl flex flex-col items-center">
+    
+    <div class="w-full flex items-center justify-between border-b border-slate-800 pb-3 mb-6">
+      <div class="flex items-center gap-3">
+        <h2 class="text-lg font-bold text-white">Fotos Capturadas</h2>
+        <span id="galleryBadgeCount" class="text-xs bg-blue-600 text-white px-2.5 py-0.5 rounded-full font-bold">0 fotos</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btnDeleteAll" class="px-3 py-1.5 rounded-xl bg-red-950 hover:bg-red-900 border border-red-800 text-xs font-semibold text-red-300 hover:text-white transition">
+          Excluir Todas
+        </button>
+        <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="text-xs text-slate-400 hover:text-white px-2 py-1">
+          ↑ Topo
+        </button>
+      </div>
+    </div>
+
+    <!-- Cards de Fotos -->
+    <div id="galleryContainer" class="w-full space-y-6"></div>
+
+  </section>
+
+  <!-- Modal Zoom -->
+  <div id="zoomModal" class="fixed inset-0 z-50 bg-black/90 hidden flex items-center justify-center p-4" onclick="closeZoomModal()">
+    <div class="relative max-w-5xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden" onclick="event.stopPropagation()">
+      <div class="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+        <h4 id="zoomModalTitle" class="text-xs font-bold text-slate-200">Foto</h4>
+        <button onclick="closeZoomModal()" class="text-slate-400 hover:text-white p-1">✕</button>
+      </div>
+      <div class="p-2 overflow-auto max-h-[82vh] flex items-center justify-center bg-black">
+        <img id="zoomModalImage" src="" alt="Foto" class="max-w-full max-h-full object-contain" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let mediaStream = null;
+    let ringBuffer = [];
+    let ringBufferTimer = null;
+    let diffCheckTimer = null;
+    let recordedPairs = [];
+    let isRecording = false;
+
+    const analysisCanvas = document.createElement('canvas');
+    const analysisCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
+    let lastImageData = null;
+    let lastCaptureTime = 0;
+
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const btnManualSnap = document.getElementById('btnManualSnap');
+    const btnViewResult = document.getElementById('btnViewResult');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+    const clickCounter = document.getElementById('clickCounter');
+    const photoCounter = document.getElementById('photoCounter');
+    const previewContainer = document.getElementById('previewContainer');
+    const screenVideo = document.getElementById('screenVideo');
+    const errorBox = document.getElementById('errorBox');
+    const gallerySection = document.getElementById('gallerySection');
+    const galleryContainer = document.getElementById('galleryContainer');
+    const galleryBadgeCount = document.getElementById('galleryBadgeCount');
+    const btnDeleteAll = document.getElementById('btnDeleteAll');
+
+    btnStart.addEventListener('click', async () => {
+      hideError();
+      btnViewResult.classList.add('hidden');
+      gallerySection.classList.add('hidden');
+
+      try {
+        mediaStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: "always" },
+          audio: false
+        });
+
+        screenVideo.srcObject = mediaStream;
+        previewContainer.classList.remove('hidden');
+
+        isRecording = true;
+        ringBuffer = [];
+        recordedPairs = [];
+        lastImageData = null;
+        lastCaptureTime = Date.now();
+        updateCounters(0, 0);
+
+        btnStart.classList.add('hidden');
+        btnStop.classList.remove('hidden');
+        btnManualSnap.classList.remove('hidden');
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 recording-dot';
+        statusText.textContent = 'Gravando tela';
+
+        mediaStream.getVideoTracks()[0].addEventListener('ended', () => {
+          if (isRecording) {
+            stopRecording();
+          }
+        });
+
+        startSilentRingBuffer();
+        startScreenChangeDetector();
+
+      } catch (err) {
+        showError('Erro ao iniciar: ' + err.message);
+      }
+    });
+
+    function startSilentRingBuffer() {
+      const bufferCanvas = document.createElement('canvas');
+      const bufferCtx = bufferCanvas.getContext('2d');
+
+      ringBufferTimer = setInterval(() => {
+        if (!mediaStream || !isRecording) return;
+        if (screenVideo.videoWidth === 0 || screenVideo.videoHeight === 0) return;
+
+        bufferCanvas.width = screenVideo.videoWidth;
+        bufferCanvas.height = screenVideo.videoHeight;
+        bufferCtx.drawImage(screenVideo, 0, 0, bufferCanvas.width, bufferCanvas.height);
+
+        const dataUrl = bufferCanvas.toDataURL('image/jpeg', 0.65);
+        ringBuffer.push({
+          timestamp: Date.now(),
+          dataUrl: dataUrl
+        });
+
+        if (ringBuffer.length > 8) {
+          ringBuffer.shift();
+        }
+      }, 200);
+    }
+
+    function startScreenChangeDetector() {
+      analysisCanvas.width = 160;
+      analysisCanvas.height = 90;
+
+      diffCheckTimer = setInterval(() => {
+        if (!mediaStream || !isRecording) return;
+        if (screenVideo.videoWidth === 0 || screenVideo.videoHeight === 0) return;
+
+        analysisCtx.drawImage(screenVideo, 0, 0, 160, 90);
+        const currentData = analysisCtx.getImageData(0, 0, 160, 90).data;
+
+        if (lastImageData) {
+          let diffScore = 0;
+          for (let i = 0; i < currentData.length; i += 16) {
+            const diffR = Math.abs(currentData[i] - lastImageData[i]);
+            const diffG = Math.abs(currentData[i + 1] - lastImageData[i + 1]);
+            const diffB = Math.abs(currentData[i + 2] - lastImageData[i + 2]);
+            if (diffR + diffG + diffB > 65) {
+              diffScore++;
+            }
+          }
+
+          const now = Date.now();
+          if (diffScore > 35 && (now - lastCaptureTime > 900)) {
+            triggerPairCapture();
+            lastCaptureTime = now;
+          }
+        }
+
+        lastImageData = currentData;
+      }, 250);
+    }
+
+    function triggerPairCapture() {
+      if (!isRecording || !mediaStream) return;
+      if (screenVideo.videoWidth === 0 || screenVideo.videoHeight === 0) return;
+
+      const targetTime = Date.now() - 500;
+      let imageBefore = null;
+
+      if (ringBuffer.length > 0) {
+        let closest = ringBuffer[0];
+        let minDiff = Math.abs(closest.timestamp - targetTime);
+
+        for (let i = 1; i < ringBuffer.length; i++) {
+          const diff = Math.abs(ringBuffer[i].timestamp - targetTime);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closest = ringBuffer[i];
+          }
+        }
+        imageBefore = closest.dataUrl;
+      }
+
+      const currentCanvas = document.createElement('canvas');
+      const currentCtx = currentCanvas.getContext('2d');
+      currentCanvas.width = screenVideo.videoWidth;
+      currentCanvas.height = screenVideo.videoHeight;
+      currentCtx.drawImage(screenVideo, 0, 0, currentCanvas.width, currentCanvas.height);
+
+      const imageDuring = currentCanvas.toDataURL('image/jpeg', 0.75);
+
+      if (!imageBefore) {
+        imageBefore = imageDuring;
+      }
+
+      const clickNumber = recordedPairs.length + 1;
+      recordedPairs.push({
+        clickNumber: clickNumber,
+        timestamp: new Date().toLocaleTimeString(),
+        imageBefore: imageBefore,
+        imageDuring: imageDuring
+      });
+
+      const totalPhotos = recordedPairs.length * 2;
+      updateCounters(recordedPairs.length, totalPhotos);
+
+      statusText.textContent = `Ação #${clickNumber} registrada (+2 fotos)`;
+    }
+
+    window.addEventListener('mousedown', (e) => {
+      if (!isRecording) return;
+      if (e.target.closest('#btnStop') || e.target.closest('#btnStart') || e.target.closest('#btnViewResult') || e.target.closest('#btnDeleteAll')) return;
+      triggerPairCapture();
+    });
+
+    btnManualSnap.addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerPairCapture();
+    });
+
+    function updateCounters(clicks, photos) {
+      clickCounter.textContent = clicks;
+      photoCounter.textContent = photos;
+    }
+
+    btnStop.addEventListener('click', (e) => {
+      e.stopPropagation();
+      stopRecording();
+    });
+
+    function stopRecording() {
+      if (!isRecording) return;
+      isRecording = false;
+
+      if (ringBufferTimer) clearInterval(ringBufferTimer);
+      if (diffCheckTimer) clearInterval(diffCheckTimer);
+
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+      }
+
+      btnStop.classList.add('hidden');
+      btnManualSnap.classList.add('hidden');
+
+      if (recordedPairs.length === 0) {
+        btnStart.classList.remove('hidden');
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+        statusText.textContent = 'Nenhuma foto gravada';
+        showError('Nenhuma ação ou clique foi gravado.');
+        return;
+      }
+
+      statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+      statusText.textContent = 'Gravação finalizada';
+
+      btnViewResult.classList.remove('hidden');
+      btnStart.classList.remove('hidden');
+      btnStart.textContent = 'Gravar Novamente';
+
+      renderGallery();
+    }
+
+    btnViewResult.addEventListener('click', () => {
+      renderGallery();
+      gallerySection.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    window.deleteSinglePair = function(index) {
+      if (confirm(`Excluir as fotos da Ação #${index + 1}?`)) {
+        recordedPairs.splice(index, 1);
+        
+        recordedPairs.forEach((item, idx) => {
+          item.clickNumber = idx + 1;
+        });
+
+        const totalPhotos = recordedPairs.length * 2;
+        updateCounters(recordedPairs.length, totalPhotos);
+
+        if (recordedPairs.length === 0) {
+          gallerySection.classList.add('hidden');
+          btnViewResult.classList.add('hidden');
+          statusText.textContent = 'Fotos excluídas';
+        } else {
+          renderGallery();
+        }
+      }
+    };
+
+    btnDeleteAll.addEventListener('click', () => {
+      if (confirm('Excluir todas as fotos?')) {
+        recordedPairs = [];
+        updateCounters(0, 0);
+        galleryContainer.innerHTML = '';
+        gallerySection.classList.add('hidden');
+        btnViewResult.classList.add('hidden');
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+        statusText.textContent = 'Pronto para iniciar';
+      }
+    });
+
+    function renderGallery() {
+      galleryContainer.innerHTML = '';
+      galleryBadgeCount.textContent = `${recordedPairs.length * 2} fotos`;
+
+      recordedPairs.forEach((pair, index) => {
+        const card = document.createElement('div');
+        card.className = 'bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5 shadow-lg';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                #${pair.clickNumber}
+              </span>
+              <h3 class="text-sm font-bold text-white">Ação #${pair.clickNumber}</h3>
+              <span class="text-[11px] text-slate-500 font-mono">${pair.timestamp}</span>
+            </div>
+
+            <button onclick="deleteSinglePair(${index})" class="px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900 text-xs text-red-300 transition">
+              Excluir
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            
+            <!-- Foto 1 -->
+            <div class="flex flex-col items-center">
+              <span class="text-xs font-semibold text-slate-400 mb-1">0,5s Antes</span>
+              <div class="w-full rounded-xl overflow-hidden border border-slate-800 bg-black aspect-video cursor-pointer"
+                   onclick="openZoomModal('${pair.imageBefore}', 'Ação #${pair.clickNumber} - 0,5s Antes')">
+                <img src="${pair.imageBefore}" class="w-full h-full object-contain" />
+              </div>
+            </div>
+
+            <!-- Foto 2 -->
+            <div class="flex flex-col items-center">
+              <span class="text-xs font-semibold text-blue-400 mb-1">No Momento</span>
+              <div class="w-full rounded-xl overflow-hidden border border-blue-900/60 bg-black aspect-video cursor-pointer"
+                   onclick="openZoomModal('${pair.imageDuring}', 'Ação #${pair.clickNumber} - No Momento')">
+                <img src="${pair.imageDuring}" class="w-full h-full object-contain" />
+              </div>
+            </div>
+
+          </div>
+        `;
+
+        galleryContainer.appendChild(card);
+      });
+
+      gallerySection.classList.remove('hidden');
+    }
+
+    function openZoomModal(src, title) {
+      document.getElementById('zoomModalImage').src = src;
+      document.getElementById('zoomModalTitle').textContent = title;
+      document.getElementById('zoomModal').classList.remove('hidden');
+    }
+
+    function closeZoomModal() {
+      document.getElementById('zoomModal').classList.add('hidden');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeZoomModal();
+    });
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorBox.classList.add('hidden');
+      errorBox.textContent = '';
+    }
+  </script>
+</body>
+</html>

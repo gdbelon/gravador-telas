@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gravador de Cliques</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      width: 320px;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      padding: 16px;
+      font-size: 14px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand h1 {
+      font-size: 15px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-status.recording {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: currentColor;
+    }
+
+    .badge-status.recording .status-dot {
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(1.3); }
+    }
+
+    .metric-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric-info span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: #60a5fa;
+      font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-start:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+    }
+
+    .btn-stop:hover {
+      background: linear-gradient(135deg, #b91c1c, #991b1b);
+    }
+
+    .btn-gallery {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 8px;
+    }
+
+    .btn-gallery:hover {
+      color: #fff;
+      border-color: #64748b;
+    }
+
+    .error-box {
+      display: none;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+
+    .tip {
+      font-size: 10px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.4;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>Gravador de Cliques</h1>
+    </div>
+    <div id="statusBadge" class="badge-status">
+      <span class="status-dot"></span>
+      <span id="statusText">Pronto</span>
+    </div>
+  </header>
+
+  <div class="metric-card">
+    <div class="metric-info">
+      <span>Cliques Capturados</span>
+      <div id="stepCounter" class="metric-value">0</div>
+    </div>
+    <div class="text-right">
+      <span id="photoCounter" class="metric-sub">0 fotos</span>
+      <div style="font-size: 10px; color: #64748b;">(2 fotos/clique)</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="btnStart" class="btn-start">
+      ▶ Iniciar Gravação
+    </button>
+
+    <button id="btnStop" class="btn-stop" style="display: none;">
+      ⏹ Finalizar e Ver Fotos
+    </button>
+
+    <button id="btnOpenGallery" class="btn-gallery">
+      🖼 Abrir Galeria de Fotos
+    </button>
+  </div>
+
+  <div id="errorBox" class="error-box"></div>
+
+  <p class="tip">
+    Funciona em <strong>todas as páginas da web</strong>.<br>
+    Grava 1 foto de 1s antes e 1 foto no instante do clique.
+  </p>
+
+  <script src="popup.js"></script>
+</body>
+</html>
