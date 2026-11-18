@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gravador de Tela</title>
+  <title>Gravador de Tela | Soluções Empresariais</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @keyframes pulse {
@@ -13,6 +13,48 @@
     .recording-dot {
       animation: pulse 1.2s infinite;
     }
+  
+    :root {
+      color-scheme: light;
+      --brand-white: #FFFFFF;
+      --brand-black: #000000;
+      --brand-navy: #0A233B;
+      --brand-blue: #003174;
+      --brand-sky: #1C6899;
+      --brand-orange: #FF7300;
+      --brand-gray: #B6B6B4;
+      --brand-green: #5EAC24;
+      --brand-purple: #4D487E;
+    }
+    body.bg-slate-950 { background-color: #FFFFFF !important; color: #0A233B !important; }
+    .bg-slate-900, .bg-slate-950 { background-color: #FFFFFF !important; color: #0A233B !important; }
+    .bg-slate-800, [class~="bg-slate-800/80"] { background-color: rgba(182,182,180,.16) !important; }
+    .border-slate-800, .border-slate-700 { border-color: #B6B6B4 !important; }
+    .text-slate-100, .text-slate-200, .text-slate-300 { color: #0A233B !important; }
+    .text-slate-400, .text-slate-500 { color: #4D487E !important; }
+    .text-white { color: #0A233B !important; }
+    .bg-blue-600 { background-color: #003174 !important; }
+    [class~="hover:bg-blue-500"]:hover { background-color: #1C6899 !important; }
+    .text-blue-400 { color: #1C6899 !important; }
+    [class~="border-blue-900/60"] { border-color: rgba(28,104,153,.6) !important; }
+    [class~="shadow-blue-600/30"] { --tw-shadow-color: rgba(0,49,116,.3) !important; }
+    .bg-red-600 { background-color: #FF7300 !important; }
+    .bg-red-600.text-white { color: #000000 !important; }
+    [class~="hover:bg-red-500"]:hover, [class~="hover:bg-red-900"]:hover { background-color: #FF7300 !important; }
+    [class~="bg-red-950/60"] { background-color: rgba(255,115,0,.12) !important; }
+    .border-red-800 { border-color: rgba(255,115,0,.45) !important; }
+    .text-red-300 { color: #0A233B !important; }
+    .bg-emerald-600 { background-color: #5EAC24 !important; }
+    .bg-emerald-600.text-white { color: #000000 !important; }
+    [class~="hover:from-emerald-500"]:hover { background-color: #003174 !important; color: #FFFFFF !important; }
+    [class~="hover:bg-slate-700"]:hover { background-color: #1C6899 !important; color: #FFFFFF !important; }
+    [class~="hover:bg-slate-900"]:hover { background-color: #B6B6B4 !important; }
+    [class~="hover:text-white"]:hover { color: #1C6899 !important; }
+    #statusDot.bg-slate-500 { background-color: #B6B6B4 !important; }
+    #statusDot.bg-red-500 { background-color: #FF7300 !important; }
+    #statusDot.bg-emerald-500 { background-color: #5EAC24 !important; }
+    #btnStart.bg-blue-600.text-white, .bg-blue-600.text-white { color: #FFFFFF !important; }
+
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center p-4 md:p-8 font-sans antialiased">
@@ -21,8 +63,9 @@
   <main class="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col items-center text-center mb-8">
     
     <!-- Título Principal -->
-    <h1 class="text-2xl font-bold text-white mb-4">
-      Gravador de Tela
+    <h1 class="text-2xl font-bold text-white mb-4 inline-flex items-center justify-center gap-3">
+      <img src="assets/solucoes-empresariais-marca.png" alt="Símbolo da Soluções Empresariais" style="width:72px;height:34px;object-fit:contain;flex:none;" />
+      <span>Gravador de Tela</span>
     </h1>
 
     <!-- Indicador de Status -->
